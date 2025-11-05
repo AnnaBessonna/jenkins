@@ -39,7 +39,8 @@ pipeline {
                 sh 'curl -I http://localhost | head -n 1'
             }
         }
-    }
+
+        // ✅ ВАЖНО: этот stage должен быть ВНУТРИ блока stages { ... }
         stage('Check Apache Logs') {
             steps {
                 echo '🔍 Checking Apache logs for 4xx and 5xx errors...'
@@ -63,10 +64,11 @@ pipeline {
                 '''
             }
         }
+    }
 
     post {
         success {
-            echo 'Apache2 successfully installed and running!'
+            echo 'Apache2 successfully installed and verified!'
         }
         failure {
             echo 'Pipeline failed. Check Jenkins logs.'
