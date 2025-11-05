@@ -2,58 +2,49 @@ pipeline {
     agent any
 
     stages {
-        stage('Update system') {
+        stage('Checkout') {
             steps {
+                git branch: 'main', url: 'https://github.com/AnnaBessonna/jenkins'
+            }
+        }
+
+        stage('Update System') {
+            steps {
+                echo 'Updating packages...'
                 sh 'sudo apt update -y'
             }
         }
 
         stage('Install Apache2') {
             steps {
+                echo 'Installing Apache2...'
                 sh 'sudo apt install -y apache2'
             }
         }
 
         stage('Start Apache2') {
             steps {
+                echo 'Starting Apache2...'
                 sh '''
-                sudo systemctl enable apache2
-                sudo systemctl start apache2
+                    sudo systemctl enable apache2
+                    sudo systemctl start apache2
+                    sudo systemctl status apache2 | grep active
                 '''
             }
         }
 
-        stage('Check Apache Response') {
+        stage('Deployment Verification') {
             steps {
+                echo 'Verifying deployment...'
                 sh '''
-                RESPONSE=$(curl -I http://localhost 2>/dev/null | head -n 1)
-                echo "Response: $RESPONSE"
-                if echo "$RESPONSE" | grep -q "200 OK"; then
-                    echo "Apache2 is working!"
-                else
-                    echo "Apache2 failed to respond correctly."
-                    exit 1
-                fi
-                '''
-            }
-        }
-
-        stage('Check Apache Logs') {
-            steps {
-                sh '''
-                LOG_FILE="/var/log/apache2/access.log"
-                if [ -f "$LOG_FILE" ]; then
-                    sudo grep 'HTTP/1.[01]" [45][0-9][0-9]' "$LOG_FILE" > errors.log || true
-                    if [ -s errors.log ]; then
-                        echo "Found errors in Apache logs:"
-                        cat errors.log
-                        exit 1
+                    RESPONSE=$(curl -I http://localhost | head -n 1)
+                    echo "$RESPONSE"
+                    if echo "$RESPONSE" | grep -q "200 OK"; then
+                        echo "Deployment successful!"
                     else
-                        echo "No 4xx or 5xx errors found."
+                        echo "Deployment failed!"
+                        exit 1
                     fi
-                else
-                    echo "Apache log file not found."
-                fi
                 '''
             }
         }
@@ -61,10 +52,10 @@ pipeline {
 
     post {
         success {
-            echo 'SUCCESS: Apache installed, verified and logs checked!'
+            echo '🎉 Pipeline finished successfully!'
         }
         failure {
-            echo 'FAILURE: See console output for details.'
+            echo '❗ Pipeline failed. Check Jenkins logs.'
         }
     }
 }
